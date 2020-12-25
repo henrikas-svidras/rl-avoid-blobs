@@ -215,10 +215,7 @@ class Snake:
             self.order = self.leader.order + 1
     
     def set_dir(self, dir):
-        print(dir)
-        print(self.dir)
         if not (dir == self.dir*-1):
-            print('changing')
             self.dir = dir
     
     def update(self):
