@@ -187,3 +187,90 @@ class Enemy(pygame.sprite.Sprite):
             self.speed_y*=-1
             if random.random()>0.5:
                 self.speed_x += random.uniform(-5,5) if abs(self.speed_x)<self.max_speed else self.max_speed
+
+
+class Snake(pygame.sprite.Sprite):
+    
+    def __init__(self, leader=None, init_x=None, init_y=None):
+        super(Snake, self).__init__()
+        
+        # Order in tail
+        self.order = 0
+        
+        self.facing = 1
+
+        # Appearance for pygame
+        self.surf = pygame.Surface((20, 20))
+        self.surf.fill((255, 255, 255))
+        self.rect = self.surf.get_rect(center=(init_x, init_y))
+        if leader is not None:
+            assert isinstance(
+                leader, Snake), "Must follow another Snakepiece or be leading!"
+        self.leader = leader
+        self.follower = None
+        if self.leader is not None:
+            self.order = self.leader.order + 1
+    
+    def move_x(self, dir=1):
+        self.follow_leader()
+        self.rect.move_ip(dir*20, 0)
+        self.facing = dir*1
+
+    def move_y(self, dir=1):
+        self.follow_leader()
+        self.rect.move_ip(0, dir*20)
+        self.facing = dir*2
+
+    def follow_leader(self):
+        if self.follower is not None:
+            self.follower.follow_leader()
+            self.follower.rect.move_ip(self.rect.centerx-self.follower.rect.centerx,
+                                    self.rect.centery-self.follower.rect.centery)
+            print(self.follower.rect.center)
+
+    def respect_bounds(self, max_x, max_y):
+
+            if self.rect.left < 0:
+                self.rect.left = 0
+            elif self.rect.right >= max_x:
+                self.rect.right = max_x
+
+            if self.rect.top <= 0:
+                self.rect.top = 0
+            elif self.rect.bottom >= max_y:
+                self.rect.bottom = max_y
+    
+    def grow(self):
+        if self.follower is None:
+            print("no follower so a new one is made!")
+            init_x = self.rect.centerx
+            init_y = self.rect.centery
+
+            if abs(self.facing) == 1:
+                init_x -= self.facing*20
+            else:
+                init_y -= self.facing*10
+
+            self.follower = Snake(init_x=init_x, init_y=init_y)
+        else:
+            self.follower.grow()
+
+    def return_self_and_followers(self):
+        self_and_followers = np.array([self])
+        if self.follower is not None:
+            self_and_followers = np.append(self_and_followers,
+                                           self.follower.return_self_and_followers())
+        return self_and_followers
+
+
+class Food(pygame.sprite.Sprite):
+
+    def __init__(self, init_x=None, init_y=None):
+        super(Food, self).__init__()
+
+        # Appearance for pygame
+        self.surf = pygame.Surface((10, 10))
+        self.surf.fill((255, 0, 0))
+        self.rect = self.surf.get_rect(center=(init_x, init_y))
+
+

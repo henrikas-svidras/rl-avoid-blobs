@@ -25,9 +25,9 @@ num_actions = 4
 num_hidden = 128
 
 inputs = tf.keras.layers.Input(shape=num_inputs)
-common = tf.keras.layers.Dense(num_inputs*64, activation="tanh")(inputs)
+common = tf.keras.layers.Dense(num_inputs*64, activation="hard_sigmoid")(inputs)
 action = tf.keras.layers.Dense(num_actions, activation='softmax')(common)
-critic = tf.keras.layers.Dense(0.000001)(common)
+critic = tf.keras.layers.Dense(1)(common)
 model = tf.keras.Model(inputs=inputs, outputs=[action,critic])
 print(model.summary())
 optimizer = tf.keras.optimizers.Adam(learning_rate=1)
