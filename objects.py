@@ -193,19 +193,43 @@ class Snake:
     
     def __init__(self, leader=None, init_x=None, init_y=None):        
         # Order in tail
-        self.order = 0        
+        self.order = 0 
+        # if +/-1 -> facing left/right, if +/-2 facing up/down       
         self.facing = 1
+
         self.pos_x = init_x if init_x else 0
         self.pos_y = init_y if init_y else 0
-    
+        
+        # +1: left, -1: right, +2:up, -2:down
+        self.dir = 1 
+
+        # if this snake has a leading part it is checked here
         if leader is not None:
             assert isinstance(
                 leader, Snake), "Must follow another Snakepiece or be leading!"
         self.leader = leader
+        # upon creation snake doesnt have a follower
         self.follower = None
 
         if self.leader is not None:
             self.order = self.leader.order + 1
+    
+    def set_dir(self, dir):
+        print(dir)
+        print(self.dir)
+        if not (dir == self.dir*-1):
+            print('changing')
+            self.dir = dir
+    
+    def update(self):
+        if self.dir == -1:
+            self.move_x(1)
+        if self.dir == 1:
+            self.move_x(-1)
+        if self.dir == 2:
+            self.move_y(-1)
+        if self.dir == -2:
+            self.move_y(1)
     
     def move_x(self, dir=1):
         self.follow_leader()
@@ -224,21 +248,22 @@ class Snake:
             self.follower.pos_y = self.pos_y
 
     def is_touching_wall(self, max_x, max_y):
-            if self.pos_x < 0:
-                self.pos_x = 0
-                return True
-            elif self.pos_x >= max_x:
-                self.pos_x = max_x
-                return True
+        touched_wall = False
+        if self.pos_x < 0:
+            self.pos_x = 0
+            touched_wall = True
+        if self.pos_x >= max_x:
+            self.pos_x = max_x
+            touched_wall = True
 
-            if self.pos_y <= 0:
-                self.pos_y = 0
-                return True
-            elif self.pos_y >= max_y:
-                self.pos_y = max_y
-                return True
+        if self.pos_y <= 0:
+            self.pos_y = 0
+            touched_wall = True
+        if self.pos_y >= max_y:
+            self.pos_y = max_y
+            touched_wall = True
             
-            return False
+        return touched_wall
     
     def grow(self):
         if self.follower is None:
@@ -264,10 +289,19 @@ class Snake:
 
 
 class Food():
-    spawned = False
     eaten = False
-    def __init__(self, init_x=None, init_y=None):
-        self.pos_x = init_x if init_x else 0
-        self.pos_y = init_y if init_y else 0
+    
+    def __init__(self, grid_x, grid_y):
+        self.grid_x = grid_x
+        self.grid_y = grid_y
+
+        self.pos_x = np.random.choice(self.grid_x)
+        self.pos_y = np.random.choice(self.grid_y)
+        self.eaten = False
+
+    def respawn(self):
+        self.pos_x = np.random.choice(self.grid_x)
+        self.pos_y = np.random.choice(self.grid_y)
+        self.eaten = False
 
 
