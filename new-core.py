@@ -18,17 +18,19 @@ max_steps_per_episode = 10000
 
 eps = np.finfo(np.float32).eps.item()  # Smallest number such that 1.0 + eps != 1.0
 
-num_inputs = 6
+MAX_ENEMY = 4
+
+num_inputs = MAX_ENEMY+2
 num_actions = 4
 num_hidden = 128
 
 inputs = tf.keras.layers.Input(shape=num_inputs)
-common = tf.keras.layers.Dense(num_hidden, activation="relu")(inputs)
+common = tf.keras.layers.Dense(num_inputs*64, activation="tanh")(inputs)
 action = tf.keras.layers.Dense(num_actions, activation='softmax')(common)
-critic = tf.keras.layers.Dense(num_actions)(common)
+critic = tf.keras.layers.Dense(0.000001)(common)
 model = tf.keras.Model(inputs=inputs, outputs=[action,critic])
 print(model.summary())
-optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
+optimizer = tf.keras.optimizers.Adam(learning_rate=1)
 huber_loss = tf.keras.losses.Huber()
 
 
@@ -45,7 +47,6 @@ pygame.init()
 # Set up the drawing window
 SCREEN_WIDTH = 1000
 SCREEN_HEIGHT = 1000
-MAX_ENEMY = 4
 screen = pygame.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT])
 
 # Create a custom event for adding a new enemy
@@ -60,19 +61,23 @@ times_survived = []
 figure, ax = plt.subplots(1,1)
 
 
-def get_enemy_states(enemies, scr_x, scr_y):
+def get_dists(enemies, player):
     xy_coords = []
     for enemy in enemies:
-        x = enemy.rect.centerx
-        y = enemy.rect.centery
+        x = enemy.rect.centerx - player.rect.centerx
+        y = enemy.rect.centery - player.rect.centery
         xy_coords.append([x, y])
-    xy_coords.append([scr_x, scr_y])
-    xy_coords.append([0, 0])
+
+    xy_coords.append([0,
+                      min(player.rect.centery, SCREEN_HEIGHT-player.rect.centery)])
+    xy_coords.append([min(player.rect.centerx, SCREEN_WIDTH-player.rect.centerx),
+                     0])
     xy_coords = np.array(xy_coords)
 
-    dists = np.sqrt(np.sum(np.square(xy_coords), axis=1))
-    return dists
+    dists = np.vstack(np.sqrt(np.sum(np.square(xy_coords), axis=1)))
 
+    return dists.T
+record_time = 0
 while time_passed<60 and USER_PERMISSION:
 
     # Run until the user asks to quit
@@ -81,6 +86,7 @@ while time_passed<60 and USER_PERMISSION:
     player = Player(bot=True)
 
     episode_reward = 0
+    print(f'current record: {record_time}')
     with tf.GradientTape() as tape:
         player = Player(bot=True)
 
@@ -108,10 +114,10 @@ while time_passed<60 and USER_PERMISSION:
                 enemies.add(new_enemy)
                 all_sprites.add(new_enemy)
 
-        dists = get_enemy_states(enemies, SCREEN_WIDTH, SCREEN_HEIGHT)
+        dists = get_dists(enemies, player)
 
-        state = tf.convert_to_tensor(np.vstack(dists-np.sqrt(player.rect.centerx**2+player.rect.centery**2)))
-
+        state = tf.convert_to_tensor(dists/(SCREEN_WIDTH**2+SCREEN_HEIGHT**2))
+        
         print(f'Starting generation {generation}')
         while RUNNING:
             for event in pygame.event.get():
@@ -122,13 +128,11 @@ while time_passed<60 and USER_PERMISSION:
 
             screen.fill((0, 0, 0))
 
-            action_probs, critic_value = model(tf.transpose(state))  
-            action = np.random.choice(4, p=np.squeeze(action_probs))
-
             if not GAME_OVER:
-                critic_value_history.append(critic_value[0, 0])
+                action_probs, critic_value = model(state)  
+                action = np.random.choice(4, p=np.squeeze(action_probs))        
+                critic_value_history.append(np.squeeze(critic_value))
                 action_probs_history.append(tf.math.log(action_probs[0, action]))
-
             action_x = 0
             action_y = 0
             if action == 0:
@@ -139,8 +143,8 @@ while time_passed<60 and USER_PERMISSION:
                 action_y = 1
             if action == 3:
                 action_y = -1
-
-            player.update(None, (action_x, action_y))
+            if not GAME_OVER:
+                player.update(None, (action_x, action_y))
 
             # Draw all sprites
             for entity in all_sprites:
@@ -158,23 +162,28 @@ while time_passed<60 and USER_PERMISSION:
                     GAME_OVER = True
             if not GAME_OVER:
                 time_passed+=clock.get_time()/1000
-                myfont.render_to(screen, (SCREEN_WIDTH*0.8, SCREEN_HEIGHT*0.1), f"{time_passed:.2g} s", (220, 0, 0))
-                dists = get_enemy_states(enemies, SCREEN_WIDTH, SCREEN_HEIGHT)
+                myfont.render_to(screen, (SCREEN_WIDTH*0.8, SCREEN_HEIGHT*0.1), f"{time_passed:.2f} s", (220, 0, 0))
+                dists = get_dists(enemies, player)
 
-                state = tf.convert_to_tensor(np.vstack(dists-np.sqrt(player.rect.centerx**2+player.rect.centery**2)))
+                state = tf.convert_to_tensor(dists/(SCREEN_WIDTH**2+SCREEN_HEIGHT**2))
 
-                reward = math.exp(time_passed-15)-int(player.hitting_side_wall)-int(player.hitting_top_wall)
+                reward = (time_passed-record_time)/60 + np.min(dists)/np.max(dists) - 5*int(player.hitting_side_wall) - 5*int(player.hitting_top_wall)
                 rewards_history.append(reward)
                 episode_reward += reward
             else:
                 myfont.render_to(screen, (SCREEN_WIDTH*0.8, SCREEN_HEIGHT*0.1), f"{time_passed:.2f} s", (220, 0, 0))
                 myfont.render_to(screen, (SCREEN_WIDTH/2, SCREEN_HEIGHT/2), "Big ded", (220, 0, 0))
+                record_time = time_passed if time_passed > record_time else record_time
                 if time_after_death > 5:
                     RUNNING = False
                     time_after_death = 0
+                    reward_history.append(-100)
+                    episode_reward -= 100
+                    print(f'current record: {record_time}')
                 else:
                     time_after_death += clock.get_time()/1000
-            
+    
+
             myfont.render_to(screen, (SCREEN_WIDTH*0.1, SCREEN_HEIGHT*0.05), f"Generation {generation}", (220, 0, 0))
             myfont.render_to(screen, (SCREEN_WIDTH*0.1, SCREEN_HEIGHT*0.1), f"running reward: {running_reward:.2f}", (220, 0, 0))
             # Flip the display
@@ -182,10 +191,10 @@ while time_passed<60 and USER_PERMISSION:
             # Ensure program maintains a rate of 30 frames per second
             # Setup the clock for a decent framerate
             clock.tick(30)
-        ax.plot(generation, time_passed, 'or')
-        ax.set_xlabel('Generation')
-        ax.set_ylabel('Time survided, s')
-        plt.show(block=False)
+        #ax.plot(generation, time_passed, 'or')
+        #ax.set_xlabel('Generation')
+        #ax.set_ylabel('Time survided, s')
+        #plt.show(block=False)
 
         # Update running reward to check condition for solving
         running_reward = 0.05 * episode_reward + (1 - 0.05) * running_reward
@@ -220,15 +229,13 @@ while time_passed<60 and USER_PERMISSION:
         #     # of `log_prob` and ended up recieving a total reward = `ret`.
         #     # The actor must be updated so that it predicts an action that leads to
         #     # high rewards (compared to critic's estimate) with high probability.
-             diff = ret - value
-        #     print(diff)
+             diff = np.abs(ret - value)
 
              actor_losses.append(-log_prob * diff)  # actor loss
-
+             #actor_losses.append(diff)  # actor loss
         #     # The critic must be updated so that it predicts a better estimate of
         #     # the future rewards.
              critic_losses.append(
-        #         huber_loss(value, ret)
                   huber_loss(tf.expand_dims(value, 0), tf.expand_dims(ret, 0))
 
              )
@@ -240,7 +247,7 @@ while time_passed<60 and USER_PERMISSION:
         optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
         # Clear the loss and reward history
- 
+
         action_probs_history.clear()
         critic_value_history.clear()
         rewards_history.clear()
