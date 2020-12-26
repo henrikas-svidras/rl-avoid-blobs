@@ -20,7 +20,6 @@ game_over = False
 while not game_over:
     dir = 0
     for event in pygame.event.get():
-        
         if event.type == pygame.QUIT:
             RUNNING = False
         if event.type == pygame.KEYDOWN:
