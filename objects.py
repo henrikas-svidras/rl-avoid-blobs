@@ -215,7 +215,9 @@ class Snake:
             self.order = self.leader.order + 1
     
     def set_dir(self, dir):
-        if not (dir == self.dir*-1):
+        if dir == 0:
+            pass
+        elif not (dir == self.dir*-1):
             self.dir = dir
     
     def update(self):
@@ -262,6 +264,11 @@ class Snake:
             
         return touched_wall
     
+    def is_self_colliding(self):
+        for snakepiece in self.return_self_and_followers()[1:]:
+            if (self.pos_x == snakepiece.pos_x) and (self.pos_y == snakepiece.pos_y):
+                return True
+    
     def grow(self):
         if self.follower is None:
 
@@ -302,3 +309,59 @@ class Food():
         self.eaten = False
 
 
+class SnakeWorld:
+    snake = None
+    food = None
+    x_grid_length = 0
+    y_grid_length = 0
+
+    state = None
+
+    score = 0
+    game_over = False
+
+    def __init__(self, x_grid_length, y_grid_length):
+        self.x_grid_length = x_grid_length
+        self.y_grid_length = y_grid_length
+        self.snake = Snake(init_x = x_grid_length//2,
+                           init_y = y_grid_length//2)
+        self.food = Food(grid_x=x_grid_length,
+                         grid_y=y_grid_length)
+        self.state = np.zeros((x_grid_length, y_grid_length))
+    
+    def _empty_state(self):
+        return np.zeros((self.x_grid_length, self.y_grid_length))
+
+
+    def step(self, snake_dir):
+        # Before drawing sets everything in the state matrix to 0:
+        self.state = self._empty_state()
+
+        # At the beginning of each step respawns the food if it was eaten
+        if self.food.eaten:
+            self.food.respawn()
+        # Sets the food as 2 in the state matrix
+        self.state[self.food.pos_x, self.food.pos_y] = 2
+        
+        # Sets the direction of the snake and updates its entire position
+        self.snake.set_dir(snake_dir)
+        self.snake.update()
+        # Sets the snakepieces as 1 on the matrix
+        for snakepiece in self.snake.return_self_and_followers():
+            self.state[snakepiece.pos_x, snakepiece.pos_y] = 1
+
+        # If after moving the snake eats the food, set the food state to eaten and grow the snake
+        if (self.snake.pos_x == self.food.pos_x) and (self.snake.pos_y == self.food.pos_y):
+            self.food.eaten = True
+            self.snake.grow()
+            self.score += 1
+        
+        # If after moving the snake goes into itself or the wall -> game over 
+        self.game_over = self.snake.is_touching_wall(self.x_grid_length, self.y_grid_length) or\
+                         self.snake.is_self_colliding()
+        
+        return self.state, self.game_over, self.score
+            
+
+
+    
