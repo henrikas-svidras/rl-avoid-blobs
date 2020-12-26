@@ -2,6 +2,10 @@ import pygame
 import pygame.freetype
 from objects import SnakeWorld
 
+import numpy as np
+
+import torch
+
 MAX_LENGTH = 10
 
 SCREEN_WIDTH_IN_SQUARES = 50
@@ -34,6 +38,12 @@ while not game_over:
     
     state, game_over, score = world.step(dir)
     world.render()
-            
+    state1 = (state == 1).astype(int)
+    state2 = (state == 2).astype(int)
+    state3 = (state == 3).astype(int)
+
+    states = np.asarray([state1, state2, state3])
+    states = torch.Tensor(states)
+    print(states.shape)
 
 
