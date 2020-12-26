@@ -1,5 +1,9 @@
+import torch
+from torch import nn
 import numpy as np
-
+import torch.nn.functional as F
+import random
+from collections import namedtuple, deque
 
 class QAgent():
     # Algorithm parameters: step size alpha, small step epsilon > 0
@@ -38,5 +42,98 @@ class QAgent():
         print("finished training!")
 
 
-qagent = QAgent(5, 2)
+def get_action(state, target_net, epsilon, env):
+    if np.random.rand() <= epsilon:
+        return env.action_space.sample()
+    else:
+        return target_net.get_action(state)
 
+
+class QNet(nn.Module):
+    def __init__(self, num_inputs, num_outputs):
+        super(QNet, self).__init__()
+        self.num_inputs = num_inputs
+        self.num_outputs = num_outputs
+
+        self.lr = 0.01
+        self.gamma = 0.95
+    
+        self.model = nn.Sequential(
+            nn.Linear(num_inputs, 128),
+            nn.ReLU(),
+            nn.Linear(128, num_outputs)
+        )
+
+
+        '''
+        snake
+        self.model = nn.Sequential(
+          nn.Conv2d(2, 6, 3),
+          nn.MaxPool2d(2),
+          nn.ReLU(),
+          nn.Conv2d(6, 12, 2, dilation=2),
+          nn.MaxPool2d(2),
+          nn.Conv2d(12, 64, 2, dilation=2),
+          nn.MaxPool2d(4),
+          nn.ReLU(),
+          nn.Flatten(),
+          nn.Linear(64, 128),
+          nn.ReLU(),
+          nn.Linear(128, 4),
+          nn.Softmax()
+        )
+        '''
+
+    def forward(self, x):
+        return self.model(x)
+
+    def choose_action(self, state, env):
+        if (np.random.random() < self.epsilon):
+            return self.env.action_space.sample()
+        else:
+            return np.argmax(self.Q_table[state])
+
+    def get_action(self, input):
+        qvalue = self.forward(input)
+        _, action = torch.max(qvalue, 1)
+        return action.numpy()[0]
+
+    def train_model(self, online_net, target_net, optimizer, batch):
+
+        states = torch.stack(batch.state)
+        next_states = torch.stack(batch.next_state)
+        actions = torch.Tensor(batch.action).float()
+        rewards = torch.Tensor(batch.reward)
+        masks = torch.Tensor(batch.mask)
+
+        pred = online_net(states).squeeze(1)
+        next_pred = target_net(next_states).squeeze(1)
+
+        pred = torch.sum(pred.mul(actions), dim=1)
+
+        target = rewards + masks * self.gamma * next_pred.max(1)[0]
+
+        loss = F.mse_loss(pred, target.detach())
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        return loss
+
+
+class Memory(object):
+    def __init__(self, capacity):
+        self.Transition = namedtuple('Transition', ('state', 'next_state', 'action', 'reward', 'mask'))
+        self.memory = deque(maxlen=capacity)
+        self.capacity = capacity
+
+    def push(self, state, next_state, action, reward, mask):
+        self.memory.append(self.Transition(state, next_state, action, reward, mask))
+
+    def sample(self, batch_size):
+        transitions = random.sample(self.memory, batch_size)
+        batch = self.Transition(*zip(*transitions))
+        return batch
+
+    def __len__(self):
+        return len(self.memory)
