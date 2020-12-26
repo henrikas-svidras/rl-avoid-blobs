@@ -8,8 +8,8 @@ import pygame
 
 import numpy as np
 
-import gym
-
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
 
 # Define a Player object by extending pygame.sprite.Sprite
@@ -229,7 +229,7 @@ class Snake:
             self.move_y(-1)
         if self.dir == -2:
             self.move_y(1)
-    
+
     def move_x(self, dir=1):
         self.follow_leader()
         self.pos_x += dir
@@ -251,23 +251,24 @@ class Snake:
         if self.pos_x < 0:
             self.pos_x = 0
             touched_wall = True
-        if self.pos_x >= max_x:
+        if self.pos_x > max_x:
             self.pos_x = max_x
             touched_wall = True
 
-        if self.pos_y <= 0:
+        if self.pos_y < 0:
             self.pos_y = 0
             touched_wall = True
-        if self.pos_y >= max_y:
+        if self.pos_y > max_y:
             self.pos_y = max_y
             touched_wall = True
-            
+
         return touched_wall
     
     def is_self_colliding(self):
         for snakepiece in self.return_self_and_followers()[1:]:
             if (self.pos_x == snakepiece.pos_x) and (self.pos_y == snakepiece.pos_y):
                 return True
+        return False
     
     def grow(self):
         if self.follower is None:
@@ -275,12 +276,14 @@ class Snake:
             init_x = self.pos_x
             init_y = self.pos_y
 
+
             if abs(self.facing) == 1:
                 init_x -= self.facing
             else:
                 init_y -= self.facing//2
 
             self.follower = Snake(init_x=init_x, init_y=init_y)
+
         else:
             self.follower.grow()
 
@@ -292,7 +295,7 @@ class Snake:
         return self_and_followers
 
 
-class Food():
+class Food:
     eaten = False
     
     def __init__(self, grid_x, grid_y):
@@ -303,22 +306,37 @@ class Food():
         self.pos_y = np.random.choice(self.grid_y)
         self.eaten = False
 
-    def respawn(self):
-        self.pos_x = np.random.choice(self.grid_x)
-        self.pos_y = np.random.choice(self.grid_y)
+    def respawn(self, state = None):
+        if state is None:
+            self.pos_x = np.random.choice(self.grid_x)
+            self.pos_y = np.random.choice(self.grid_y)
+        else:
+            available_slots = np.where(state==0)
+            random_sel = np.random.choice(len(available_slots[0]))
+            self.pos_x = available_slots[0][random_sel]
+            self.pos_y = available_slots[1][random_sel]
         self.eaten = False
 
 
 class SnakeWorld:
+
     snake = None
     food = None
     x_grid_length = 0
     y_grid_length = 0
 
     state = None
+    past_states = []
 
     score = 0
     game_over = False
+    time_after_death = 0
+
+    pygame.init()
+    screen = pygame.display.set_mode([1000, 1000])
+    myfont = pygame.freetype.SysFont('Comic Sans MS', 30)
+    clock = pygame.time.Clock()
+
 
     def __init__(self, x_grid_length, y_grid_length):
         self.x_grid_length = x_grid_length
@@ -329,39 +347,81 @@ class SnakeWorld:
                          grid_y=y_grid_length)
         self.state = np.zeros((x_grid_length, y_grid_length))
     
-    def _empty_state(self):
-        return np.zeros((self.x_grid_length, self.y_grid_length))
+    def renew_state(self):
+        self.past_states.append(self.state)
+        self.state = np.zeros((self.x_grid_length, self.y_grid_length))
 
 
     def step(self, snake_dir):
         # Before drawing sets everything in the state matrix to 0:
-        self.state = self._empty_state()
+        # and saves last state
+        self.renew_state()
 
         # At the beginning of each step respawns the food if it was eaten
         if self.food.eaten:
             self.food.respawn()
-        # Sets the food as 2 in the state matrix
-        self.state[self.food.pos_x, self.food.pos_y] = 2
+        # Sets the food as 3 in the state matrix
+        self.state[self.food.pos_x, self.food.pos_y] = 3
         
         # Sets the direction of the snake and updates its entire position
         self.snake.set_dir(snake_dir)
         self.snake.update()
-        # Sets the snakepieces as 1 on the matrix
-        for snakepiece in self.snake.return_self_and_followers():
-            self.state[snakepiece.pos_x, snakepiece.pos_y] = 1
+
+        # If after moving the snake goes into itself or the wall -> game over
+        self.game_over = self.snake.is_touching_wall(self.x_grid_length-1, self.y_grid_length-1) or\
+                                                     self.snake.is_self_colliding()
 
         # If after moving the snake eats the food, set the food state to eaten and grow the snake
         if (self.snake.pos_x == self.food.pos_x) and (self.snake.pos_y == self.food.pos_y):
             self.food.eaten = True
             self.snake.grow()
             self.score += 1
-        
-        # If after moving the snake goes into itself or the wall -> game over 
-        self.game_over = self.snake.is_touching_wall(self.x_grid_length, self.y_grid_length) or\
-                         self.snake.is_self_colliding()
+
+        # Sets the snakepieces as 1 on the matrix and head as 2
+        for snakepiece in self.snake.return_self_and_followers():
+            self.state[snakepiece.pos_x, snakepiece.pos_y] = 1
+        self.state[self.snake.pos_x, self.snake.pos_y] = 2
         
         return self.state, self.game_over, self.score
-            
+
+    def render(self, size = None):
+        # Drawing
+        self.screen.fill((0, 0, 0))
+        self.draw_grid(self.state)
+        self.myfont.render_to(self.screen, (1000 * 0.8,
+                                            1000 * 0.1), f"Score: {self.score}", (220, 220, 220))
+        
+        if self.game_over:
+            self.myfont.render_to(self.screen, (1000 * 0.45,
+                                                1000 * 0.5), f"GAME OVER!", (220, 220, 220))
+            self.time_after_death += self.clock.get_time()/1000
+        pygame.display.flip()
+        self.clock.tick(30)
+        if self.time_after_death > 1.5:
+            pygame.quit()
+
+    def draw_grid(self, screen_array):
+        square_size = 1000//self.x_grid_length
+        for row in range(self.x_grid_length):
+            for column in range(self.y_grid_length):
+                entry = screen_array[row, column]
+                if entry == 0:
+                    continue
+                if screen_array[row, column] == 1:
+                    color = (200,200,200)
+                elif screen_array[row, column] ==2:
+                    color = (255, 0, 0)
+                elif screen_array[row, column] == 3:
+                    color = (0, 255, 0)
+                pygame.draw.rect(self.screen,
+                                color,
+                                    [(square_size) * row,
+                                    (square_size) * column,
+                                    square_size,
+                                    square_size])
+
+    def __del__(self):
+        pygame.quit()
 
 
     
