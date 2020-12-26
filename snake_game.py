@@ -94,6 +94,7 @@ while RUNNING:
     # Here the game cycle ends. You now have access to variables:
     # state - 2D numpy array 
     # game_over - has the snake hit a wall or itself
+    print(state)
 
     # Drawing
     screen.fill((0, 0, 0))
