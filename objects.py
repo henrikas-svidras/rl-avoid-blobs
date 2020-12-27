@@ -341,11 +341,19 @@ class SnakeWorld:
     def __init__(self, x_grid_length, y_grid_length):
         self.x_grid_length = x_grid_length
         self.y_grid_length = y_grid_length
-        self.snake = Snake(init_x = x_grid_length//2,
-                           init_y = y_grid_length//2)
-        self.food = Food(grid_x=x_grid_length,
-                         grid_y=y_grid_length)
-        self.state = np.zeros((x_grid_length, y_grid_length))
+        self.reinitialise()
+    
+    def reinitialise(self):
+        self.snake = Snake(init_x=self.x_grid_length//2,
+                           init_y=self.y_grid_length//2)
+        self.food = Food(grid_x=self.x_grid_length,
+                         grid_y=self.y_grid_length)
+
+        self.state = np.zeros((self.x_grid_length, self.y_grid_length))
+
+        self.state[self.snake.pos_x, self.snake.pos_y] = 2
+        self.food.respawn(self.state)
+        self.state[self.food.pos_x, self.food.pos_y] = 3
     
     def renew_state(self):
         self.past_states.append(self.state)
@@ -353,6 +361,7 @@ class SnakeWorld:
 
 
     def step(self, snake_dir):
+        reward = 0
         # Before drawing sets everything in the state matrix to 0:
         # and saves last state
         self.renew_state()
@@ -370,19 +379,22 @@ class SnakeWorld:
         # If after moving the snake goes into itself or the wall -> game over
         self.game_over = self.snake.is_touching_wall(self.x_grid_length-1, self.y_grid_length-1) or\
                                                      self.snake.is_self_colliding()
+        if self.game_over:
+            reward = -10
 
         # If after moving the snake eats the food, set the food state to eaten and grow the snake
         if (self.snake.pos_x == self.food.pos_x) and (self.snake.pos_y == self.food.pos_y):
             self.food.eaten = True
             self.snake.grow()
             self.score += 1
+            reward = 5
 
         # Sets the snakepieces as 1 on the matrix and head as 2
         for snakepiece in self.snake.return_self_and_followers():
             self.state[snakepiece.pos_x, snakepiece.pos_y] = 1
         self.state[self.snake.pos_x, self.snake.pos_y] = 2
         
-        return self.state, self.game_over, self.score
+        return self.state, self.game_over, self.score, reward
 
     def render(self, size = None):
         # Drawing
@@ -396,9 +408,11 @@ class SnakeWorld:
                                                 1000 * 0.5), f"GAME OVER!", (220, 220, 220))
             self.time_after_death += self.clock.get_time()/1000
         pygame.display.flip()
-        self.clock.tick(30)
-        if self.time_after_death > 1.5:
-            pygame.quit()
+        self.clock.tick(100)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+
 
     def draw_grid(self, screen_array):
         square_size = 1000//self.x_grid_length

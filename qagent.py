@@ -57,32 +57,28 @@ class QNet(nn.Module):
 
         self.lr = 0.01
         self.gamma = 0.95
-    
+        '''
         self.model = nn.Sequential(
             nn.Linear(num_inputs, 128),
             nn.ReLU(),
             nn.Linear(128, num_outputs)
         )
-
-
         '''
-        snake
+
         self.model = nn.Sequential(
-          nn.Conv2d(2, 6, 3),
+          nn.Conv2d(3, 6, 3),
           nn.MaxPool2d(2),
           nn.ReLU(),
           nn.Conv2d(6, 12, 2, dilation=2),
           nn.MaxPool2d(2),
           nn.Conv2d(12, 64, 2, dilation=2),
-          nn.MaxPool2d(4),
+          #nn.MaxPool2d(4),
           nn.ReLU(),
           nn.Flatten(),
           nn.Linear(64, 128),
           nn.ReLU(),
-          nn.Linear(128, 4),
-          nn.Softmax()
+          nn.Linear(128, self.num_outputs),
         )
-        '''
 
     def forward(self, x):
         return self.model(x)
@@ -100,8 +96,8 @@ class QNet(nn.Module):
 
     def train_model(self, online_net, target_net, optimizer, batch):
 
-        states = torch.stack(batch.state)
-        next_states = torch.stack(batch.next_state)
+        states = torch.stack(batch.state).squeeze(1)
+        next_states = torch.stack(batch.next_state).squeeze(1)
         actions = torch.Tensor(batch.action).float()
         rewards = torch.Tensor(batch.reward)
         masks = torch.Tensor(batch.mask)
