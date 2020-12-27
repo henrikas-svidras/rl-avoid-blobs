@@ -15,7 +15,7 @@ SCREEN_HEIGHT_IN_SQUARES = 20
 # hyper pars
 gamma = 0.99
 batch_size = 32
-lr = 0.001
+lr = 0.01
 initial_exploration = 33
 goal_score = 200
 log_interval = 10
@@ -111,7 +111,7 @@ for e in range(3000):
 
         if steps > initial_exploration:
             # hyperparameter to balance risk/reward
-            epsilon -= 0.005
+            epsilon -= 0.00005
             epsilon = max(epsilon, 0.1)
 
             batch = memory.sample(batch_size)

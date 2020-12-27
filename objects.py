@@ -387,7 +387,7 @@ class SnakeWorld:
             self.food.eaten = True
             self.snake.grow()
             self.score += 1
-            reward = 5
+            reward = 100
 
         # Sets the snakepieces as 1 on the matrix and head as 2
         for snakepiece in self.snake.return_self_and_followers():

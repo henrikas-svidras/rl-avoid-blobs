@@ -66,7 +66,7 @@ class QNet(nn.Module):
         '''
 
         self.model = nn.Sequential(
-          nn.Conv2d(3, 6, 3),
+          nn.Conv2d(3, 6, 1),
           nn.MaxPool2d(2),
           nn.ReLU(),
           nn.Conv2d(6, 12, 2, dilation=2),
@@ -75,7 +75,7 @@ class QNet(nn.Module):
           #nn.MaxPool2d(4),
           nn.ReLU(),
           nn.Flatten(),
-          nn.Linear(64, 128),
+          nn.Linear(256, 128),
           nn.ReLU(),
           nn.Linear(128, self.num_outputs),
         )
