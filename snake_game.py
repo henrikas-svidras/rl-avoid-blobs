@@ -15,7 +15,7 @@ SCREEN_HEIGHT_IN_SQUARES = 20
 # hyper pars
 gamma = 0.99
 batch_size = 32
-lr = 0.01
+lr = 0.001
 initial_exploration = 33
 goal_score = 200
 log_interval = 10
@@ -49,10 +49,11 @@ steps = 0
 
 
 def get_action(state, target_net, epsilon):
+    choice_space = [-2,-1,0,1,2]
     if np.random.rand() <= epsilon:
-        return np.random.choice([-2,-1,0,1,2])
+        return np.random.choice(choice_space)
     else:
-        return target_net.get_action(state)
+        return choice_space[target_net.get_action(state)]
 
 
 def update_target_model(online_net, target_net):
@@ -83,15 +84,13 @@ for e in range(3000):
     state = np.asarray([state1, state2, state3])
     state = torch.Tensor(state)
     state = state.unsqueeze(0)
-
     
     while not game_over:
         steps += 1
         dir = get_action(state, target_net, epsilon)
 
         next_state, game_over, _, reward = world.step(dir)
-        if e % 100 == 0:
-            world.render()
+        
 
 
         next_state1, next_state2, next_state3 = make_states(next_state)
@@ -111,7 +110,7 @@ for e in range(3000):
 
         if steps > initial_exploration:
             # hyperparameter to balance risk/reward
-            epsilon -= 0.00005
+            epsilon -= 0.000005
             epsilon = max(epsilon, 0.1)
 
             batch = memory.sample(batch_size)
@@ -125,6 +124,9 @@ for e in range(3000):
     running_score = 0.99 * running_score + 0.01 * score
     print('{} episode | score: {:.2f} | epsilon: {:.2f}'.format(
         e, running_score, epsilon))
+
+    if e % 100 == 0:
+        world.render_mpl()
 
     if running_score > goal_score:
         break

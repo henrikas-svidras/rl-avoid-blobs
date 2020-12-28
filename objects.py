@@ -334,9 +334,9 @@ class SnakeWorld:
 
     ready_to_render = False
 
-    def setup_rendering(self):
+    def setup_rendering(self, size):
         pygame.init()
-        self.screen = pygame.display.set_mode([1000, 1000])
+        self.screen = pygame.display.set_mode([size, size])
         self.myfont = pygame.freetype.SysFont('Comic Sans MS', 30)
         self.clock = pygame.time.Clock()
         self.ready_to_render = True
@@ -357,6 +357,13 @@ class SnakeWorld:
         self.state[self.snake.pos_x, self.snake.pos_y] = 2
         self.food.respawn(self.state)
         self.state[self.food.pos_x, self.food.pos_y] = 3
+
+        self.past_states = []
+
+        self.score = 0
+        self.game_over = False
+        self.time_after_death = 0
+        self.ready_to_render = False
     
     def renew_state(self):
         self.past_states.append(self.state)
@@ -401,7 +408,7 @@ class SnakeWorld:
 
     def render(self, size = 1000, fps = 100):
         if not self.ready_to_render:
-            self.setup_rendering()
+            self.setup_rendering(size)
         # Drawing
         self.screen.fill((0, 0, 0))
         self.draw_grid(self.state, size=size)
@@ -417,7 +424,28 @@ class SnakeWorld:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
+    
+    def render_mpl(self, size=10, fps=30):
+        fig = plt.figure(figsize=(size, size))
 
+        ini_state = self.past_states[0]
+        im = plt.imshow(ini_state)
+
+        anim = FuncAnimation(
+            fig,
+            self.swap_state_picture,
+            fargs=(im),
+            frames=fps,
+            interval=1000 / fps,  # in ms
+            repeat=False,
+        )
+        plt.show()
+
+    def swap_state_picture(self, i, im):
+        im.set_array(self.past_states[i])
+        if i>=len(self.past_states):
+            plt.close('all')
+        return [im]
 
     def draw_grid(self, screen_array, size=1000):
         square_size = size//self.x_grid_length
