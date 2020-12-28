@@ -50,10 +50,11 @@ def get_action(state, target_net, epsilon, env):
 
 
 class QNet(nn.Module):
-    def __init__(self, num_inputs, num_outputs):
+    def __init__(self, num_inputs, num_outputs, dev="cpu"):
         super(QNet, self).__init__()
         self.num_inputs = num_inputs
         self.num_outputs = num_outputs
+        self.dev = dev
 
         self.lr = 0.01
         self.gamma = 0.95
@@ -66,22 +67,28 @@ class QNet(nn.Module):
         '''
 
         self.model = nn.Sequential(
-          nn.Conv2d(3, 6, 1),
-          nn.MaxPool2d(2),
+          nn.Conv2d(3, 32, 4, stride=3),
           nn.ReLU(),
-          nn.Conv2d(6, 12, 2, dilation=2),
-          nn.MaxPool2d(2),
-          nn.Conv2d(12, 64, 2, dilation=2),
-          #nn.MaxPool2d(4),
+          nn.Conv2d(32, 64, 3, stride=2),
+          nn.ReLU(),
+          nn.Conv2d(64, 64, 2, stride=1),
           nn.ReLU(),
           nn.Flatten(),
-          nn.Linear(256, 128),
+          nn.Linear(64, 512),
           nn.ReLU(),
-          nn.Linear(128, self.num_outputs),
+          nn.Linear(512, self.num_outputs),
         )
+        self.model = self.model.to(self.dev)
 
     def forward(self, x):
         return self.model(x)
+
+    def save(self, gen):
+        torch.save(self.model.state_dict(), "models/"+str(gen)+".pt")
+
+    def load(self, gen):
+        self.model.load_state_dict(torch.load("models/"+str(gen)+".pt", map_location="cpu"))
+        self.model.eval()
 
     def choose_action(self, state, env):
         if (np.random.random() < self.epsilon):
@@ -92,15 +99,15 @@ class QNet(nn.Module):
     def get_action(self, input):
         qvalue = self.forward(input)
         _, action = torch.max(qvalue, 1)
-        return action.numpy()[0]
+        return action.cpu().numpy()[0]
 
     def train_model(self, online_net, target_net, optimizer, batch):
 
-        states = torch.stack(batch.state).squeeze(1)
-        next_states = torch.stack(batch.next_state).squeeze(1)
-        actions = torch.Tensor(batch.action).float()
-        rewards = torch.Tensor(batch.reward)
-        masks = torch.Tensor(batch.mask)
+        states = torch.stack(batch.state).squeeze(1).to(self.dev)
+        next_states = torch.stack(batch.next_state).squeeze(1).to(self.dev)
+        actions = torch.Tensor(batch.action).float().to(self.dev)
+        rewards = torch.Tensor(batch.reward).to(self.dev)
+        masks = torch.Tensor(batch.mask).to(self.dev)
 
         pred = online_net(states).squeeze(1)
         next_pred = target_net(next_states).squeeze(1)

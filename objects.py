@@ -221,13 +221,13 @@ class Snake:
             self.dir = dir
     
     def update(self):
-        if self.dir == -1:
-            self.move_x(1)
         if self.dir == 1:
-            self.move_x(-1)
+            self.move_x(1)
         if self.dir == 2:
+            self.move_x(-1)
+        if self.dir == 3:
             self.move_y(-1)
-        if self.dir == -2:
+        if self.dir == 4:
             self.move_y(1)
 
     def move_x(self, dir=1):
