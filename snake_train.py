@@ -79,8 +79,7 @@ def make_states(state):
 world = SnakeWorld(SCREEN_WIDTH_IN_SQUARES, SCREEN_HEIGHT_IN_SQUARES)
 for e in range(100000):
     # hyperparameter to balance risk/reward
-    #epsilon -= 0.00001
-    epsilon -= 0.1
+    epsilon -= 0.00001
     epsilon = max(epsilon, 0.1)
     game_over = False
 
