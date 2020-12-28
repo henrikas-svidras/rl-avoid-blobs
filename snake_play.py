@@ -33,10 +33,10 @@ def make_states(state):
 
 
 world = SnakeWorld(SCREEN_WIDTH_IN_SQUARES, SCREEN_HEIGHT_IN_SQUARES)
+world.reinitialise()
 game_over = False
 
 score = 0
-world.reinitialise()
 state1, state2, state3 = make_states(world.state)
 state = np.asarray([state1, state2, state3])
 state = torch.Tensor(state)
@@ -44,8 +44,8 @@ state = state.unsqueeze(0)
 
 while not game_over:
     steps += 1
-    state = state.cuda()
-    dir = target_net.get_action(state, dev="cpu")
+    dir = target_net.get_action(state)
+    print(steps, dir)
     world.render()
 
     next_state, game_over, _, reward = world.step(dir)

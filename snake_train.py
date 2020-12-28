@@ -95,7 +95,6 @@ for e in range(100000):
         steps += 1
         state = state.to(dev)
         dir = get_action(state, target_net, epsilon)
-
         next_state, game_over, _, reward = world.step(dir)
         #if e % 100 == 0:
             #world.render()

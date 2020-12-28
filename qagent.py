@@ -87,7 +87,7 @@ class QNet(nn.Module):
         torch.save(self.model.state_dict(), "models/"+str(gen)+".pt")
 
     def load(self, gen):
-        self.model.load_state_dict(torch.load("models/"+str(gen)+".pt"))
+        self.model.load_state_dict(torch.load("models/"+str(gen)+".pt", map_location="cpu"))
         self.model.eval()
 
     def choose_action(self, state, env):
@@ -96,9 +96,7 @@ class QNet(nn.Module):
         else:
             return np.argmax(self.Q_table[state])
 
-    def get_action(self, input, dev=None):
-        if dev is not None:
-            input = input.to(dev)
+    def get_action(self, input):
         qvalue = self.forward(input)
         _, action = torch.max(qvalue, 1)
         return action.cpu().numpy()[0]
