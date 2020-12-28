@@ -33,7 +33,7 @@ def make_states(state):
 
 
 world = SnakeWorld(SCREEN_WIDTH_IN_SQUARES, SCREEN_HEIGHT_IN_SQUARES)
-world.reinitialise()
+#world.reinitialise()
 game_over = False
 
 score = 0
@@ -45,7 +45,6 @@ state = state.unsqueeze(0)
 while not game_over:
     steps += 1
     dir = target_net.get_action(state)
-    print(steps, dir)
     world.render()
 
     next_state, game_over, _, reward = world.step(dir)

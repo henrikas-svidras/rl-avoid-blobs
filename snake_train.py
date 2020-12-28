@@ -53,7 +53,7 @@ steps = 0
 
 def get_action(state, target_net, epsilon):
     if np.random.rand() <= epsilon:
-        return np.random.choice([-2,-1,0,1,2])
+        return np.random.choice([0,1,2,3,4])
     else:
         return target_net.get_action(state)
 
@@ -79,7 +79,8 @@ def make_states(state):
 world = SnakeWorld(SCREEN_WIDTH_IN_SQUARES, SCREEN_HEIGHT_IN_SQUARES)
 for e in range(100000):
     # hyperparameter to balance risk/reward
-    epsilon -= 0.00001
+    #epsilon -= 0.00001
+    epsilon -= 0.1
     epsilon = max(epsilon, 0.1)
     game_over = False
 
