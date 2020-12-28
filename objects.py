@@ -332,11 +332,14 @@ class SnakeWorld:
     game_over = False
     time_after_death = 0
 
-    pygame.init()
-    screen = pygame.display.set_mode([1000, 1000])
-    myfont = pygame.freetype.SysFont('Comic Sans MS', 30)
-    clock = pygame.time.Clock()
+    ready_to_render = False
 
+    def setup_rendering(self):
+        pygame.init()
+        self.screen = pygame.display.set_mode([1000, 1000])
+        self.myfont = pygame.freetype.SysFont('Comic Sans MS', 30)
+        self.clock = pygame.time.Clock()
+        self.ready_to_render = True
 
     def __init__(self, x_grid_length, y_grid_length):
         self.x_grid_length = x_grid_length
@@ -396,26 +399,28 @@ class SnakeWorld:
         
         return self.state, self.game_over, self.score, reward
 
-    def render(self, size = None):
+    def render(self, size = 1000, fps = 100):
+        if not self.ready_to_render:
+            self.setup_rendering()
         # Drawing
         self.screen.fill((0, 0, 0))
-        self.draw_grid(self.state)
-        self.myfont.render_to(self.screen, (1000 * 0.8,
-                                            1000 * 0.1), f"Score: {self.score}", (220, 220, 220))
+        self.draw_grid(self.state, size=size)
+        self.myfont.render_to(self.screen, (size * 0.8,
+                                            size * 0.1), f"Score: {self.score}", (220, 220, 220))
         
         if self.game_over:
-            self.myfont.render_to(self.screen, (1000 * 0.45,
-                                                1000 * 0.5), f"GAME OVER!", (220, 220, 220))
+            self.myfont.render_to(self.screen, (size * 0.45,
+                                                size * 0.5), f"GAME OVER!", (220, 220, 220))
             self.time_after_death += self.clock.get_time()/1000
         pygame.display.flip()
-        self.clock.tick(100)
+        self.clock.tick(fps)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
 
 
-    def draw_grid(self, screen_array):
-        square_size = 1000//self.x_grid_length
+    def draw_grid(self, screen_array, size=1000):
+        square_size = size//self.x_grid_length
         for row in range(self.x_grid_length):
             for column in range(self.y_grid_length):
                 entry = screen_array[row, column]
