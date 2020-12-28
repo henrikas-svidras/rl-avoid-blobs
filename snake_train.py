@@ -132,8 +132,8 @@ for e in range(100000):
             e, running_score, epsilon, model_generation))
         print
 
-    if e % 100 == 0:
-        world.render_mpl()
+    #if e % 100 == 0:
+        #world.render_mpl()
 
     if running_score > goal_score:
         break
