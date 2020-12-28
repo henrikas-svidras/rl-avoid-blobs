@@ -7,7 +7,11 @@ import numpy as np
 from qagent import QNet, Memory
 import torch
 import torch.optim as optim
-print(torch.cuda.is_available())
+if torch.cuda.is_available():  
+  dev = "cuda:0" 
+else:  
+  dev = "cpu"
+print("Using device", dev)
 
 SCREEN_WIDTH_IN_SQUARES = 20
 SCREEN_HEIGHT_IN_SQUARES = 20
@@ -15,12 +19,12 @@ SCREEN_HEIGHT_IN_SQUARES = 20
 # hyper pars
 gamma = 0.99
 batch_size = 32
-lr = 0.01
+lr = 0.001
 initial_exploration = 33
 goal_score = 200
 log_interval = 10
 update_target = 100
-replay_memory_capacity = 1000
+replay_memory_capacity = 1000000
 ### 
 
 # NN
@@ -30,8 +34,8 @@ num_actions = 5
 print('state size:', num_inputs)
 print('action size:', num_actions)
 
-online_net = QNet(num_inputs, num_actions)
-target_net = QNet(num_inputs, num_actions)
+online_net = QNet(num_inputs, num_actions, dev=dev)
+target_net = QNet(num_inputs, num_actions, dev=dev)
 
 online_net.train()
 target_net.train()
@@ -46,7 +50,6 @@ loss = 0
 optimizer = optim.Adam(online_net.parameters(), lr=lr)
 
 steps = 0
-
 
 def get_action(state, target_net, epsilon):
     if np.random.rand() <= epsilon:
@@ -74,7 +77,10 @@ def make_states(state):
 
 
 world = SnakeWorld(SCREEN_WIDTH_IN_SQUARES, SCREEN_HEIGHT_IN_SQUARES)
-for e in range(3000):
+for e in range(100000):
+    # hyperparameter to balance risk/reward
+    epsilon -= 0.00001
+    epsilon = max(epsilon, 0.1)
     game_over = False
 
     score = 0
@@ -87,12 +93,12 @@ for e in range(3000):
     
     while not game_over:
         steps += 1
+        state = state.to(dev)
         dir = get_action(state, target_net, epsilon)
 
         next_state, game_over, _, reward = world.step(dir)
-        if e % 100 == 0:
-            world.render()
-
+        #if e % 100 == 0:
+            #world.render()
 
         next_state1, next_state2, next_state3 = make_states(next_state)
         next_state = np.asarray([next_state1, next_state2, next_state3])
@@ -110,10 +116,6 @@ for e in range(3000):
         state = next_state
 
         if steps > initial_exploration:
-            # hyperparameter to balance risk/reward
-            epsilon -= 0.00005
-            epsilon = max(epsilon, 0.1)
-
             batch = memory.sample(batch_size)
             loss = online_net.train_model(online_net=online_net, target_net=target_net,
                                           optimizer=optimizer, batch=batch)
@@ -123,8 +125,12 @@ for e in range(3000):
 
     score = score if score == 500.0 else score + 1
     running_score = 0.99 * running_score + 0.01 * score
-    print('{} episode | score: {:.2f} | epsilon: {:.2f}'.format(
-        e, running_score, epsilon))
+    if e % 100 == 0:
+        model_generation =  int(e / 100)
+        online_net.save(model_generation)
+        print('{} episode | score: {:.2f} | epsilon: {:.2f}. Saving model generation {:n}'.format(
+            e, running_score, epsilon, model_generation))
+        print
 
     if running_score > goal_score:
         break
