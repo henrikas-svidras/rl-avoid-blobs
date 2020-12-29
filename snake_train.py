@@ -130,9 +130,10 @@ for e in range(100000):
         online_net.save(model_generation)
         print('{} episode | score: {:.2f} | epsilon: {:.2f}. Saving model generation {:n}'.format(
             e, running_score, epsilon, model_generation))
-        print
+
 
     if e % 100 == 0:
+        #world.render()
         world.render_mpl()
 
     if running_score > goal_score:

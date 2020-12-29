@@ -223,11 +223,11 @@ class Snake:
     def update(self):
         if self.dir == 1:
             self.move_x(1)
-        if self.dir == 2:
+        if self.dir == -1:
             self.move_x(-1)
-        if self.dir == 3:
+        if self.dir == 2:
             self.move_y(-1)
-        if self.dir == 4:
+        if self.dir == -2:
             self.move_y(1)
 
     def move_x(self, dir=1):
@@ -426,25 +426,32 @@ class SnakeWorld:
                 pygame.quit()
     
     def render_mpl(self, size=10, fps=30):
-        fig = plt.figure(figsize=(size, size))
+        self.animation_finished = False
+        fig, ax = plt.subplots(1, 1, figsize=(size, size))
 
         ini_state = self.past_states[0]
-        im = plt.imshow(ini_state)
+        im = plt.imshow(ini_state, cmap='magma')
 
         anim = FuncAnimation(
             fig,
             self.swap_state_picture,
-            fargs=(im),
-            frames=fps,
-            interval=1000 / fps,  # in ms
+            fargs=[im],
+            frames=len(self.past_states),
+            interval=1000/fps,
             repeat=False,
         )
-        plt.show()
+
+        plt.show(block=False)
+        plt.xlabel([])
+        plt.ylabel([])
+
+        plt.pause(1)
+        plt.close()
 
     def swap_state_picture(self, i, im):
         im.set_array(self.past_states[i])
-        if i>=len(self.past_states):
-            plt.close('all')
+        if i==len(self.past_states)-1:
+            print('çlosing')
         return [im]
 
     def draw_grid(self, screen_array, size=1000):
