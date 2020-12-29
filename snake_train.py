@@ -126,15 +126,14 @@ for e in range(100000):
     score = score if score == 500.0 else score + 1
     running_score = 0.99 * running_score + 0.01 * score
     if e % 100 == 0:
-        model_generation =  int(e / 100)
+
+        print('{} episode | score: {:.2f} | epsilon: {:.2f}'.format(
+            e, running_score, epsilon))
+        print
+    if e % 1000 == 0:
+        model_generation =  int(e / 1000)
         online_net.save(model_generation)
-        print('{} episode | score: {:.2f} | epsilon: {:.2f}. Saving model generation {:n}'.format(
-            e, running_score, epsilon, model_generation))
-
-
-    if e % 100 == 0:
-        #world.render()
-        world.render_mpl()
+        print("saving model generation", model_generation)
 
     if running_score > goal_score:
         break

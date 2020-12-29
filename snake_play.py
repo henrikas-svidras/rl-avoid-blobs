@@ -19,7 +19,7 @@ print('action size:', num_actions)
 
 target_net = QNet(num_inputs, num_actions)
 
-target_net.load(3)
+target_net.load(10)
 
 steps = 0
 
@@ -31,11 +31,12 @@ def make_states(state):
     state3 = (state == 3).astype(int)
     return state1, state2, state3
 
-def get_action(state, target_net, epsilon):
+def get_action(state, target_net, epsilon=0.05):
+    choice_space = [-2,-1,0,1,2]
     if np.random.rand() <= epsilon:
-        return np.random.choice([0,1,2,3,4])
+        return np.random.choice(choice_space)
     else:
-        return target_net.get_action(state)
+        return choice_space[target_net.get_action(state)]
 
 
 world = SnakeWorld(SCREEN_WIDTH_IN_SQUARES, SCREEN_HEIGHT_IN_SQUARES)
@@ -50,8 +51,8 @@ state = state.unsqueeze(0)
 
 while not game_over:
     steps += 1
-    dir = get_action(state, target_net, 0.05)
-    world.render()
+    dir = get_action(state, target_net)
+    world.render(size=600)
 
     next_state, game_over, _, reward = world.step(dir)
 
