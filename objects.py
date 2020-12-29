@@ -396,14 +396,14 @@ class SnakeWorld:
                                                      self.snake.is_self_colliding()
         print(self.game_over,self.snake.pos_x, self.snake.pos_y)
         if self.game_over:
-            reward = -10
+            reward = -1.
 
         # If after moving the snake eats the food, set the food state to eaten and grow the snake
         if (self.snake.pos_x == self.food.pos_x) and (self.snake.pos_y == self.food.pos_y):
             self.food.eaten = True
             self.snake.grow()
             self.score += 1
-            reward = 100
+            reward = 10.
 
         # Sets the snakepieces as 1 on the matrix and head as 2
         for snakepiece in self.snake.return_self_and_followers():
