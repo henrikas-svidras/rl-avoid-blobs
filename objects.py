@@ -190,17 +190,19 @@ class Enemy(pygame.sprite.Sprite):
 
 
 class Snake:
+
+    facing_cycle = ['x', 'y', '-x', '-y']
     
     def __init__(self, leader=None, init_x=None, init_y=None):        
         # Order in tail
         self.order = 0 
         # if +/-1 -> facing left/right, if +/-2 facing up/down       
-        self.facing = 1
+        self.facing = 'x'
 
         self.pos_x = init_x if init_x else 0
         self.pos_y = init_y if init_y else 0
         
-        # +1: left, -1: right, +2:up, -2:down
+        # +1: +x, -1: -x, +2: +y, -2: -y
         self.dir = 1 
 
         # if this snake has a leading part it is checked here
@@ -213,32 +215,30 @@ class Snake:
 
         if self.leader is not None:
             self.order = self.leader.order + 1
-    
+
     def set_dir(self, dir):
-        if dir == 0:
-            pass
-        elif not (dir == self.dir*-1):
-            self.dir = dir
-    
+        assert dir in [-1,0,1], f'Value Error: dir must be in [-1, 0, 1], but got {dir}'
+        new_dir = (self.facing_cycle.index(self.facing)+dir)%4
+        self.facing = self.facing_cycle[new_dir]
+
+
     def update(self):
-        if self.dir == 1:
+        if self.facing == 'x':
             self.move_x(1)
-        if self.dir == -1:
+        if self.facing == '-x':
             self.move_x(-1)
-        if self.dir == 2:
-            self.move_y(-1)
-        if self.dir == -2:
+        if self.facing == 'y':
             self.move_y(1)
+        if self.facing == '-y':
+            self.move_y(-1)
 
     def move_x(self, dir=1):
         self.follow_leader()
         self.pos_x += dir
-        self.facing = dir*1
 
     def move_y(self, dir=1):
         self.follow_leader()
         self.pos_y += dir 
-        self.facing = dir*2
 
     def follow_leader(self):
         if self.follower is not None:
@@ -276,14 +276,16 @@ class Snake:
             init_x = self.pos_x
             init_y = self.pos_y
 
-
-            if abs(self.facing) == 1:
-                init_x -= self.facing
-            else:
-                init_y -= self.facing//2
-
+            if self.facing == 'x':
+                init_x -= 1
+            elif self.facing == '-x':
+                init_x += 1
+            elif self.facing == 'y':
+                init_y -= 1
+            elif self.facing == '-y':
+                init_y += 1
             self.follower = Snake(init_x=init_x, init_y=init_y)
-
+            self.follower.facing = self.facing
         else:
             self.follower.grow()
 
@@ -349,6 +351,8 @@ class SnakeWorld:
     def reinitialise(self):
         self.snake = Snake(init_x=self.x_grid_length//2,
                            init_y=self.y_grid_length//2)
+        self.snake.grow()
+        self.snake.grow()
         self.food = Food(grid_x=self.x_grid_length,
                          grid_y=self.y_grid_length)
 
@@ -380,7 +384,7 @@ class SnakeWorld:
 
         # At the beginning of each step respawns the food if it was eaten
         if self.food.eaten:
-            self.food.respawn()
+            self.food.respawn(self.state)
         # Sets the food as 3 in the state matrix
         self.state[self.food.pos_x, self.food.pos_y] = 3
         
@@ -394,7 +398,6 @@ class SnakeWorld:
                                                      min_x = 1,
                                                      min_y = 1) or\
                                                      self.snake.is_self_colliding()
-        print(self.game_over,self.snake.pos_x, self.snake.pos_y)
         if self.game_over:
             reward = -1.
 
@@ -403,7 +406,7 @@ class SnakeWorld:
             self.food.eaten = True
             self.snake.grow()
             self.score += 1
-            reward = 10.
+            reward = 10
 
         # Sets the snakepieces as 1 on the matrix and head as 2
         for snakepiece in self.snake.return_self_and_followers():
@@ -436,7 +439,7 @@ class SnakeWorld:
         fig, ax = plt.subplots(1, 1, figsize=(size, size))
 
         ini_state = self.past_states[0]
-        im = plt.imshow(ini_state, cmap='magma')
+        im = plt.imshow(ini_state.T, cmap='magma', origin='lower')
 
         anim = FuncAnimation(
             fig,
@@ -444,20 +447,23 @@ class SnakeWorld:
             fargs=[im],
             frames=len(self.past_states),
             interval=1000/fps,
-            repeat=False,
+            repeat=False
         )
 
         plt.show(block=False)
-        plt.xlabel([])
-        plt.ylabel([])
 
-        plt.pause(1)
+        plt.xlabel("")
+        plt.ylabel("")
+        plt.xticks([])
+        plt.yticks([])
+
+        plt.pause(len(self.past_states)/fps+1)
         plt.close()
 
     def swap_state_picture(self, i, im):
-        im.set_array(self.past_states[i])
+        im.set_array(self.past_states[i].T)
         if i==len(self.past_states)-1:
-            print('çlosing')
+            plt.gca().text(0.45,0.5, "Game over", transform=plt.gca().transAxes, c='white', fontsize='medium')
         return [im]
 
     def draw_grid(self, screen_array, size=1000):

@@ -97,8 +97,8 @@ for e in range(100000):
         dir = get_action(state, target_net, epsilon)
         next_state, game_over, _, reward = world.step(dir)
 
-        if e % 100 == 0:
-            world.render()
+        #if e % 100 == 0:
+        #    world.render()
 
         next_state1, next_state2, next_state3 = make_states(next_state)
         next_state = np.asarray([next_state1, next_state2, next_state3])
@@ -126,10 +126,8 @@ for e in range(100000):
     score = score if score == 500.0 else score + 1
     running_score = 0.99 * running_score + 0.01 * score
     if e % 100 == 0:
-        world.render_mpl(size=15)
         print('{} episode | score: {:.2f} | epsilon: {:.2f}'.format(
             e, running_score, epsilon))
-        print
     if e % 1000 == 0:
         model_generation =  int(e / 1000)
         online_net.save(model_generation)
