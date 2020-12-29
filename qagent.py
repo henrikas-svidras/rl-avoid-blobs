@@ -55,9 +55,7 @@ class QNet(nn.Module):
         self.num_inputs = num_inputs
         self.num_outputs = num_outputs
         self.dev = dev
-
-        self.lr = 0.01
-        self.gamma = 0.95
+        self.gamma = 0.97
         '''
         self.model = nn.Sequential(
             nn.Linear(num_inputs, 128),
@@ -67,16 +65,16 @@ class QNet(nn.Module):
         '''
 
         self.model = nn.Sequential(
-          nn.Conv2d(3, 32, 4, stride=3),
+          nn.Conv2d(3, 32, 4, stride=1),
           nn.ReLU(),
-          nn.Conv2d(32, 64, 3, stride=2),
+          nn.MaxPool2d(2),
+          nn.Conv2d(32, 128, 2, stride=1),
           nn.ReLU(),
-          nn.Conv2d(64, 64, 2, stride=1),
-          nn.ReLU(),
+          nn.MaxPool2d(2),
           nn.Flatten(),
-          nn.Linear(64, 512),
+          nn.Linear(128, 256),
           nn.ReLU(),
-          nn.Linear(512, self.num_outputs),
+          nn.Linear(256, self.num_outputs),
         )
         self.model = self.model.to(self.dev)
 
