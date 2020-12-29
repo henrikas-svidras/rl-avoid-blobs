@@ -17,7 +17,6 @@ SCREEN_WIDTH_IN_SQUARES = 20
 SCREEN_HEIGHT_IN_SQUARES = 20
 
 # hyper pars
-gamma = 0.99
 batch_size = 32
 lr = 0.001
 initial_exploration = 33
