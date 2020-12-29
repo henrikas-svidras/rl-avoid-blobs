@@ -394,7 +394,6 @@ class SnakeWorld:
                                                      min_x = 1,
                                                      min_y = 1) or\
                                                      self.snake.is_self_colliding()
-        print(self.game_over,self.snake.pos_x, self.snake.pos_y)
         if self.game_over:
             reward = -1.
 

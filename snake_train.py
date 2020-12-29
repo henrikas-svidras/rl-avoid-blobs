@@ -70,13 +70,6 @@ game_over = False
 training = True
 
 
-def make_states(state):
-    state1 = (state == 1).astype(int)
-    state2 = (state == 2).astype(int)
-    state3 = (state == 3).astype(int)
-    return state1, state2, state3
-
-
 world = SnakeWorld(SCREEN_WIDTH_IN_SQUARES, SCREEN_HEIGHT_IN_SQUARES)
 for e in range(100000):
     # hyperparameter to balance risk/reward
@@ -86,10 +79,8 @@ for e in range(100000):
 
     score = 0
     world.reinitialise()
-    state1, state2, state3 = make_states(world.state)
-    state = np.asarray([state1, state2, state3])
-    state = torch.Tensor(state)
-    state = state.unsqueeze(0)
+    state = torch.Tensor(world.state)
+    state = state.unsqueeze(0).unsqueeze(0)
     
     while not game_over:
         steps += 1
@@ -97,14 +88,11 @@ for e in range(100000):
         dir = get_action(state, target_net, epsilon)
         next_state, game_over, _, reward = world.step(dir)
 
-        if e % 100 == 0:
-            world.render()
+        #if e % 100 == 0:
+            #world.render()
 
-        next_state1, next_state2, next_state3 = make_states(next_state)
-        next_state = np.asarray([next_state1, next_state2, next_state3])
         next_state = torch.Tensor(next_state)
-
-        next_state = next_state.unsqueeze(0)
+        next_state = next_state.unsqueeze(0).unsqueeze(0)
 
         mask = 0 if game_over else 1
         reward = reward if not game_over or score == 499 else -1

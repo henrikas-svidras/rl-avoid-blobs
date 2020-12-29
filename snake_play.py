@@ -19,17 +19,11 @@ print('action size:', num_actions)
 
 target_net = QNet(num_inputs, num_actions)
 
-target_net.load(10)
+target_net.load(1)
 
 steps = 0
 
 game_over = False
-
-def make_states(state):
-    state1 = (state == 1).astype(int)
-    state2 = (state == 2).astype(int)
-    state3 = (state == 3).astype(int)
-    return state1, state2, state3
 
 def get_action(state, target_net, epsilon=0.05):
     choice_space = [-2,-1,0,1,2]
@@ -44,25 +38,20 @@ world = SnakeWorld(SCREEN_WIDTH_IN_SQUARES, SCREEN_HEIGHT_IN_SQUARES)
 game_over = False
 
 score = 0
-state1, state2, state3 = make_states(world.state)
-state = np.asarray([state1, state2, state3])
-state = torch.Tensor(state)
-state = state.unsqueeze(0)
+state = torch.Tensor(world.state)
+state = state.unsqueeze(0).unsqueeze(0)
 
 while not game_over:
     steps += 1
     dir = get_action(state, target_net)
-    world.render_mpl()
-
 
     next_state, game_over, _, reward = world.step(dir)
 
-    next_state1, next_state2, next_state3 = make_states(next_state)
-    next_state = np.asarray([next_state1, next_state2, next_state3])
     next_state = torch.Tensor(next_state)
+    next_state = next_state.unsqueeze(0).unsqueeze(0)
 
-    next_state = next_state.unsqueeze(0)
     state = next_state
 
+world.render_mpl(size=5)
 
 
