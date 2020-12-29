@@ -1,6 +1,6 @@
 import pygame
 import pygame.freetype
-from objects import SnakeWorld
+from objects import SnakeWorld, get_action
 
 import numpy as np
 
@@ -30,7 +30,7 @@ replay_memory_capacity = 1000000
 # NN
 #num_inputs = env.observation_space.shape[0]
 num_inputs = 1200
-num_actions = 5
+num_actions = 3
 print('state size:', num_inputs)
 print('action size:', num_actions)
 
@@ -50,13 +50,6 @@ loss = 0
 optimizer = optim.Adam(online_net.parameters(), lr=lr)
 
 steps = 0
-
-def get_action(state, target_net, epsilon):
-    choice_space = [-2,-1,0,1,2]
-    if np.random.rand() <= epsilon:
-        return np.random.choice(choice_space)
-    else:
-        return choice_space[target_net.get_action(state)]
 
 
 def update_target_model(online_net, target_net):

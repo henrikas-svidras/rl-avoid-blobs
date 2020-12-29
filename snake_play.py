@@ -1,6 +1,6 @@
 import pygame
 import pygame.freetype
-from objects import SnakeWorld
+from objects import SnakeWorld, get_action
 
 import numpy as np
 
@@ -13,7 +13,7 @@ SCREEN_HEIGHT_IN_SQUARES = 10
 # NN
 #num_inputs = env.observation_space.shape[0]
 num_inputs = 1200
-num_actions = 5
+num_actions = 3
 print('state size:', num_inputs)
 print('action size:', num_actions)
 
@@ -24,13 +24,6 @@ target_net.load(1)
 steps = 0
 
 game_over = False
-
-def get_action(state, target_net, epsilon=0.05):
-    choice_space = [-2,-1,0,1,2]
-    if np.random.rand() <= epsilon:
-        return np.random.choice(choice_space)
-    else:
-        return choice_space[target_net.get_action(state)]
 
 
 world = SnakeWorld(SCREEN_WIDTH_IN_SQUARES, SCREEN_HEIGHT_IN_SQUARES)
@@ -43,7 +36,7 @@ state = state.unsqueeze(0).unsqueeze(0)
 
 while not game_over:
     steps += 1
-    dir = get_action(state, target_net)
+    dir = get_action(state, target_net, epsilon=0.01)
 
     next_state, game_over, _, reward = world.step(dir)
 
