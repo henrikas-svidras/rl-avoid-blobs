@@ -415,7 +415,7 @@ class SnakeWorld:
         
         return self.state, self.game_over, self.score, reward
 
-    def render(self, size = 1000, fps = 100):
+    def render(self, size=1000, fps=100):
         if not self.ready_to_render:
             self.setup_rendering(size)
         # Drawing
@@ -436,7 +436,7 @@ class SnakeWorld:
     
     def render_mpl(self, size=10, fps=30):
         self.animation_finished = False
-        fig, ax = plt.subplots(1, 1, figsize=(size, size))
+        fig, _ = plt.subplots(1, 1, figsize=(size, size))
 
         ini_state = self.past_states[0]
         im = plt.imshow(ini_state.T, cmap='magma', origin='lower')
@@ -464,6 +464,7 @@ class SnakeWorld:
         im.set_array(self.past_states[i].T)
         if i==len(self.past_states)-1:
             plt.gca().text(0.45,0.5, "Game over", transform=plt.gca().transAxes, c='white', fontsize='medium')
+
         return [im]
 
     def draw_grid(self, screen_array, size=1000):
