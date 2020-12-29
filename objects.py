@@ -246,17 +246,17 @@ class Snake:
             self.follower.pos_x = self.pos_x
             self.follower.pos_y = self.pos_y
 
-    def is_touching_wall(self, max_x, max_y):
+    def is_touching_wall(self, max_x, max_y, min_x=0, min_y=0):
         touched_wall = False
-        if self.pos_x < 0:
-            self.pos_x = 0
+        if self.pos_x < min_x:
+            self.pos_x = min_x
             touched_wall = True
         if self.pos_x > max_x:
             self.pos_x = max_x
             touched_wall = True
 
-        if self.pos_y < 0:
-            self.pos_y = 0
+        if self.pos_y < min_y:
+            self.pos_y = min_y
             touched_wall = True
         if self.pos_y > max_y:
             self.pos_y = max_y
@@ -352,7 +352,8 @@ class SnakeWorld:
         self.food = Food(grid_x=self.x_grid_length,
                          grid_y=self.y_grid_length)
 
-        self.state = np.zeros((self.x_grid_length, self.y_grid_length))
+        self.state = np.zeros((self.x_grid_length-2, self.y_grid_length-2))
+        self.state = np.pad(self.state, 1, constant_values=4)
 
         self.state[self.snake.pos_x, self.snake.pos_y] = 2
         self.food.respawn(self.state)
@@ -367,7 +368,8 @@ class SnakeWorld:
     
     def renew_state(self):
         self.past_states.append(self.state)
-        self.state = np.zeros((self.x_grid_length, self.y_grid_length))
+        self.state = np.zeros((self.x_grid_length-2, self.y_grid_length-2))
+        self.state = np.pad(self.state, 1, constant_values=4)
 
 
     def step(self, snake_dir):
@@ -387,8 +389,12 @@ class SnakeWorld:
         self.snake.update()
 
         # If after moving the snake goes into itself or the wall -> game over
-        self.game_over = self.snake.is_touching_wall(self.x_grid_length-1, self.y_grid_length-1) or\
+        self.game_over = self.snake.is_touching_wall(max_x = self.x_grid_length-2, 
+                                                     max_y = self.y_grid_length-2,
+                                                     min_x = 1,
+                                                     min_y = 1) or\
                                                      self.snake.is_self_colliding()
+        print(self.game_over,self.snake.pos_x, self.snake.pos_y)
         if self.game_over:
             reward = -10
 
@@ -467,6 +473,8 @@ class SnakeWorld:
                     color = (255, 0, 0)
                 elif screen_array[row, column] == 3:
                     color = (0, 255, 0)
+                elif screen_array[row, column] == 4:
+                    color = (122, 255, 53)
                 pygame.draw.rect(self.screen,
                                 color,
                                     [(square_size) * row,
