@@ -380,7 +380,7 @@ class SnakeWorld:
 
         # At the beginning of each step respawns the food if it was eaten
         if self.food.eaten:
-            self.food.respawn()
+            self.food.respawn(self.state)
         # Sets the food as 3 in the state matrix
         self.state[self.food.pos_x, self.food.pos_y] = 3
         
@@ -411,7 +411,7 @@ class SnakeWorld:
         
         return self.state, self.game_over, self.score, reward
 
-    def render(self, size = 1000, fps = 100):
+    def render(self, size=1000, fps=100):
         if not self.ready_to_render:
             self.setup_rendering(size)
         # Drawing
@@ -432,7 +432,7 @@ class SnakeWorld:
     
     def render_mpl(self, size=10, fps=30):
         self.animation_finished = False
-        fig, ax = plt.subplots(1, 1, figsize=(size, size))
+        fig, _ = plt.subplots(1, 1, figsize=(size, size))
 
         ini_state = self.past_states[0]
         im = plt.imshow(ini_state, cmap='magma')
@@ -447,16 +447,18 @@ class SnakeWorld:
         )
 
         plt.show(block=False)
-        plt.xlabel([])
-        plt.ylabel([])
+        plt.xlabel("")
+        plt.ylabel("")
+        plt.xticks([])
+        plt.yticks([])
 
-        plt.pause(1)
+        plt.pause(len(self.past_states)/fps+1)
         plt.close()
 
     def swap_state_picture(self, i, im):
         im.set_array(self.past_states[i])
         if i==len(self.past_states)-1:
-            print('çlosing')
+            print('closing')
         return [im]
 
     def draw_grid(self, screen_array, size=1000):
