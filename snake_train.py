@@ -7,7 +7,7 @@ import numpy as np
 from qagent import QNet, Memory
 import torch
 import torch.optim as optim
-if False and torch.cuda.is_available():  
+if torch.cuda.is_available():  
   dev = "cuda:0" 
 else:  
   dev = "cpu"
