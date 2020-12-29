@@ -13,10 +13,11 @@ else:
   dev = "cpu"
 print("Using device", dev)
 
-SCREEN_WIDTH_IN_SQUARES = 20
-SCREEN_HEIGHT_IN_SQUARES = 20
+SCREEN_WIDTH_IN_SQUARES = 10
+SCREEN_HEIGHT_IN_SQUARES = 10
 
 # hyper pars
+delta_epsilon = 0.00001
 batch_size = 32
 lr = 0.001
 initial_exploration = 33
@@ -79,7 +80,7 @@ def make_states(state):
 world = SnakeWorld(SCREEN_WIDTH_IN_SQUARES, SCREEN_HEIGHT_IN_SQUARES)
 for e in range(100000):
     # hyperparameter to balance risk/reward
-    epsilon -= 0.00001
+    epsilon -= delta_epsilon
     epsilon = max(epsilon, 0.1)
     game_over = False
 

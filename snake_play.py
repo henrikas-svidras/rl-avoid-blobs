@@ -7,8 +7,8 @@ import numpy as np
 from qagent import QNet
 import torch
 
-SCREEN_WIDTH_IN_SQUARES = 20
-SCREEN_HEIGHT_IN_SQUARES = 20
+SCREEN_WIDTH_IN_SQUARES = 10
+SCREEN_HEIGHT_IN_SQUARES = 10
 
 # NN
 #num_inputs = env.observation_space.shape[0]
@@ -52,7 +52,8 @@ state = state.unsqueeze(0)
 while not game_over:
     steps += 1
     dir = get_action(state, target_net)
-    world.render(size=600)
+    world.render_mpl()
+
 
     next_state, game_over, _, reward = world.step(dir)
 
