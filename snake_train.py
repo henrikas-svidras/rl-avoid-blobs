@@ -1,4 +1,3 @@
-import pygame
 import pygame.freetype
 from objects import SnakeWorld, get_action
 
@@ -21,10 +20,9 @@ delta_epsilon = 0.00001
 batch_size = 32
 lr = 0.001
 initial_exploration = 33
-goal_score = 200
-log_interval = 10
+log_interval = 100
 update_target = 100
-replay_memory_capacity = 1000000
+replay_memory_capacity = 10000
 ### 
 
 # NN
@@ -40,7 +38,7 @@ target_net = QNet(num_inputs, num_actions, dev=dev)
 online_net.train()
 target_net.train()
 
-memory = Memory(capacity=100000)
+memory = Memory(capacity=replay_memory_capacity)
 
 running_score = 0
 epsilon = 1.0
@@ -81,14 +79,11 @@ for e in range(100000):
         dir = get_action(state, target_net, epsilon)
         next_state, game_over, _, reward = world.step(dir)
 
-        #if e % 100 == 0:
-            #world.render()
-
         next_state = torch.Tensor(next_state)
         next_state = next_state.unsqueeze(0).unsqueeze(0)
 
         mask = 0 if game_over else 1
-        reward = reward if not game_over or score == 499 else -1
+        reward = reward if not game_over else -1
         action_one_hot = np.zeros(num_actions)
         action_one_hot[dir] = 1
         memory.push(state, next_state, action_one_hot, reward, mask)
@@ -104,17 +99,13 @@ for e in range(100000):
             if steps % update_target == 0:
                 update_target_model(online_net, target_net)
 
-    score = score if score == 500.0 else score + 1
     running_score = 0.99 * running_score + 0.01 * score
-    if e % 100 == 0:
+    if e % log_interval == 0:
         print('{} episode | score: {:.2f} | epsilon: {:.2f}'.format(
             e, running_score, epsilon))
-    if e % 1000 == 0:
+    if e % (10*log_interval) == 0:
         model_generation =  int(e / 1000)
         online_net.save(model_generation)
         print("saving model generation", model_generation)
-
-    if running_score > goal_score:
-        break
 
 
