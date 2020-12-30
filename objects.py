@@ -342,6 +342,8 @@ class SnakeWorld:
 
     ready_to_render = False
 
+    moves_left = 100
+
     def setup_rendering(self, size):
         pygame.init()
         self.screen = pygame.display.set_mode([size, size])
@@ -375,12 +377,12 @@ class SnakeWorld:
         self.game_over = False
         self.time_after_death = 0
         self.ready_to_render = False
+        self.moves_left = 100
     
     def renew_state(self):
         self.past_states.append(self.state)
         self.state = np.zeros((self.x_grid_length-2, self.y_grid_length-2))
         self.state = np.pad(self.state, 1, constant_values=4)
-
 
     def step(self, snake_dir):
         reward = 0
@@ -397,22 +399,27 @@ class SnakeWorld:
         # Sets the direction of the snake and updates its entire position
         self.snake.set_dir(snake_dir)
         self.snake.update()
-
-        # If after moving the snake goes into itself or the wall -> game over
-        self.game_over = self.snake.is_touching_wall(max_x = self.x_grid_length-2, 
-                                                     max_y = self.y_grid_length-2,
-                                                     min_x = 1,
-                                                     min_y = 1) or\
-                                                     self.snake.is_self_colliding()
-        if self.game_over:
-            reward = -1.
+        self.moves_left -=1
 
         # If after moving the snake eats the food, set the food state to eaten and grow the snake
         if (self.snake.pos_x == self.food.pos_x) and (self.snake.pos_y == self.food.pos_y):
             self.food.eaten = True
             self.snake.grow()
             self.score += 1
+            self.moves_left+=100
             reward = 10
+
+        # If after moving the snake goes into itself or the wall -> game over
+        self.game_over = self.snake.is_touching_wall(max_x = self.x_grid_length-2, 
+                                                     max_y = self.y_grid_length-2,
+                                                     min_x = 1,
+                                                     min_y = 1) or\
+                                                     self.snake.is_self_colliding() or\
+                                                     self.moves_left==0
+
+        if self.game_over:
+            reward = -1.
+        
 
         # Sets the snakepieces as 1 on the matrix and head as 2
         for snakepiece in self.snake.return_self_and_followers():
