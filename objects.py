@@ -12,6 +12,14 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 
+def get_action(state, target_net, epsilon):
+    choice_space = [-1,0,1]
+    if np.random.rand() <= epsilon:
+        return np.random.choice(choice_space)
+    else:
+        return choice_space[target_net.get_action(state)]
+
+
 # Define a Player object by extending pygame.sprite.Sprite
 
 # The surface drawn on the screen is now an attribute of 'player'
