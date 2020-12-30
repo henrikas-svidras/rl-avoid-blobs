@@ -113,6 +113,8 @@ for e in range(100000):
         model_generation =  int(e / 1000)
         online_net.save(model_generation)
         print("saving model generation", model_generation)
+        with open('log.txt', 'a') as f:
+            f.write(f"Gen {model_generation}, score: {running_score},  \n")
 
     if running_score > goal_score:
         break
