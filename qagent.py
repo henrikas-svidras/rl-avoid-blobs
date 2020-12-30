@@ -110,10 +110,13 @@ class QNet(nn.Module):
         pred = online_net(states).squeeze(1)
         next_pred = target_net(next_states).squeeze(1)
 
+        # state q value
         pred = torch.sum(pred.mul(actions), dim=1)
 
+        # new state max possible q value
         target = rewards + masks * self.gamma * next_pred.max(1)[0]
 
+        # Bellmann equation loss
         loss = F.mse_loss(pred, target.detach())
         optimizer.zero_grad()
         loss.backward()

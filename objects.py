@@ -13,7 +13,7 @@ from matplotlib.animation import FuncAnimation
 
 
 def get_action(state, target_net, epsilon):
-    choice_space = [0,1,2]
+    choice_space = [0, 1, 2]
     if np.random.rand() <= epsilon:
         return np.random.choice(choice_space)
     else:
