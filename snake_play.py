@@ -45,6 +45,6 @@ while not game_over:
 
     state = next_state
 
-world.render_mpl(size=5)
+world.render_mpl(size=5, fps=1)
 
 

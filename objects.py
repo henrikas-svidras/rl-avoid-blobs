@@ -13,7 +13,7 @@ from matplotlib.animation import FuncAnimation
 
 
 def get_action(state, target_net, epsilon):
-    choice_space = [-1,0,1]
+    choice_space = [0, 1, 2]
     if np.random.rand() <= epsilon:
         return np.random.choice(choice_space)
     else:
@@ -209,9 +209,6 @@ class Snake:
 
         self.pos_x = init_x if init_x else 0
         self.pos_y = init_y if init_y else 0
-        
-        # +1: +x, -1: -x, +2: +y, -2: -y
-        self.dir = 1 
 
         # if this snake has a leading part it is checked here
         if leader is not None:
@@ -225,10 +222,11 @@ class Snake:
             self.order = self.leader.order + 1
 
     def set_dir(self, dir):
-        assert dir in [-1,0,1], f'Value Error: dir must be in [-1, 0, 1], but got {dir}'
+        assert dir in [0, 1, 2], f'Value Error: dir before conversion must be in [0, 1, 2], but got {dir}'
+        dir = dir - 1
+        assert dir in [-1, 0, 1], f'Value Error: dir after conversion must be in [-1, 0, 1], but got {dir}'
         new_dir = (self.facing_cycle.index(self.facing)+dir)%4
         self.facing = self.facing_cycle[new_dir]
-
 
     def update(self):
         if self.facing == 'x':
@@ -420,11 +418,14 @@ class SnakeWorld:
         for snakepiece in self.snake.return_self_and_followers():
             self.state[snakepiece.pos_x, snakepiece.pos_y] = 1
         self.state[self.snake.pos_x, self.snake.pos_y] = 2
+
+        if self.game_over:
+            self.past_states.append(self.state)
         
         return self.state, self.game_over, self.score, reward
 
-    def render(self, size=1000, fps=100):
-        if not self.ready_to_render:
+    def render(self, size=1000, fps=100, init=True):
+        if not self.ready_to_render or init==False:
             self.setup_rendering(size)
         # Drawing
         self.screen.fill((0, 0, 0))
