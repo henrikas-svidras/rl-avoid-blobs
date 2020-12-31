@@ -251,6 +251,7 @@ class Snake:
             self.follower.follow_leader()
             self.follower.pos_x = self.pos_x
             self.follower.pos_y = self.pos_y
+            self.follower.facing = self.facing
 
     def is_touching_wall(self, max_x, max_y, min_x=0, min_y=0):
         touched_wall = False
@@ -292,6 +293,7 @@ class Snake:
                 init_y += 1
             self.follower = Snake(init_x=init_x, init_y=init_y)
             self.follower.facing = self.facing
+
         else:
             self.follower.grow()
 
@@ -370,6 +372,8 @@ class SnakeWorld:
         self.state[self.snake.pos_x, self.snake.pos_y] = 2
         self.food.respawn(self.state)
         self.state[self.food.pos_x, self.food.pos_y] = 3
+        for snakepiece in self.snake.return_self_and_followers()[1:]:
+            self.state[snakepiece.pos_x, snakepiece.pos_y] = 1
 
         self.past_states = []
 
@@ -389,13 +393,7 @@ class SnakeWorld:
         # Before drawing sets everything in the state matrix to 0:
         # and saves last state
         self.renew_state()
-
-        # At the beginning of each step respawns the food if it was eaten
-        if self.food.eaten:
-            self.food.respawn(self.state)
-        # Sets the food as 3 in the state matrix
-        self.state[self.food.pos_x, self.food.pos_y] = 3
-        
+   
         # Sets the direction of the snake and updates its entire position
         self.snake.set_dir(snake_dir)
         self.snake.update()
@@ -403,7 +401,7 @@ class SnakeWorld:
 
         # If after moving the snake eats the food, set the food state to eaten and grow the snake
         if (self.snake.pos_x == self.food.pos_x) and (self.snake.pos_y == self.food.pos_y):
-            self.food.eaten = True
+            self.food.respawn(self.past_states[-1])
             self.snake.grow()
             self.score += 1
             self.moves_left+=100
@@ -420,6 +418,8 @@ class SnakeWorld:
         if self.game_over:
             reward = -1.
         
+        # Sets the food as 3 in the state matrix
+        self.state[self.food.pos_x, self.food.pos_y] = 3
 
         # Sets the snakepieces as 1 on the matrix and head as 2
         for snakepiece in self.snake.return_self_and_followers():
